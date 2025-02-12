@@ -12,6 +12,7 @@ from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 import os
 import datetime
 import requests
+from pprint import pprint
 
 # helper function to post metrics to the Astronomer API
 def post_metrics(token: str, category: str, type: str, data: list) -> None:
