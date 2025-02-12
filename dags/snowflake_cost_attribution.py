@@ -13,6 +13,7 @@ import os
 import datetime
 import requests
 
+# helper function to post metrics to the Astronomer API
 def post_metrics(token: str, category: str, type: str, data: list) -> None:
     print(f"::group::Posting {len(data)} {type} items:")
     pprint(data, indent=2)
@@ -209,6 +210,7 @@ def cost_attribution():
     Pulls Query IDs from the Astronomer API, then queries Snowflake's account_usage.query_attribution_history
     to get the credits attributed to each query. Finally, posts the costs to the Astronomer API.
     """
+    check_env_vars()
     get_queries = get_query_ids()
     check = check_for_query_ids(get_queries["query_ids"])
 
