@@ -1,23 +1,8 @@
 """
 ## Astro Observe Cost Attribution DAG
 
-This DAG queries the list of astronauts currently in space from the 
-Open Notify API and prints each astronaut's name and flying craft.
-
-There are two tasks, one to get the data from the API and save the results,
-and another to print the results. Both tasks are written in Python using
-Airflow's TaskFlow API, which allows you to easily turn Python functions into
-Airflow tasks, and automatically infer dependencies and pass data.
-
-The second task uses dynamic task mapping to create a copy of the task for
-each Astronaut in the list retrieved from the API. This list will change
-depending on how many Astronauts are in space, and the DAG will adjust 
-accordingly each time it runs.
-
-For more explanation and getting started instructions, see our Write your 
-first DAG tutorial: https://docs.astronomer.io/learn/get-started-with-airflow
-
-![Picture of the ISS](https://www.esa.int/var/esa/storage/images/esa_multimedia/images/2010/02/space_station_over_earth/10293696-3-eng-GB/Space_Station_over_Earth_card_full.jpg)
+This DAG grabs external query IDs (each query made to snowflake is assigned a unique query ID) and then queries Snowflake's account_usage.query_attribution_history to get the credits attributed to each query. 
+These credit costs are sent to the Astronomer API for cost tracking.
 """
 
 from airflow import Dataset
@@ -34,7 +19,6 @@ from include.core.metrics import get_external_queries, post_metrics
 def check_env_vars():
     required_vars = [
         "ASTRO_ORGANIZATION_ID",
-        "CONNECTION_ID",
     ]
     missing_vars = [var for var in required_vars if not os.getenv(var)]
     if missing_vars:
@@ -183,14 +167,12 @@ def cost_attribution():
     Pulls Query IDs from the Astronomer API, then queries Snowflake's account_usage.query_attribution_history
     to get the credits attributed to each query. Finally, posts the costs to the Astronomer API.
     """
-    connection_id = os.getenv("CONNECTION_ID") # This is the connection ID to your data warehouse
-
     get_queries = get_query_ids()
     check = check_for_query_ids(get_queries["query_ids"])
 
     cost_attribution = SQLExecuteQueryOperator(
         task_id="cost_attribution",
-        conn_id=connection_id,
+        conn_id="snowflake",
         sql="""
             select
                 query_id,
@@ -204,7 +186,7 @@ def cost_attribution():
 
     rows_processed_attribution = SQLExecuteQueryOperator(
         task_id="rows_processed_attribution",
-        conn_id=connection_id,
+        conn_id="snowflake",
         sql="""
             select
                 query_id,
