@@ -1,2 +1,6 @@
 project:
-  name: astro-example-dags
+  name: observe-cost-attribution
+postgres:
+    port: "5435"
+webserver:
+    port: "8081"
