@@ -4,7 +4,7 @@ from airflow.decorators import task
 
 
 @task
-def get_external_queries(start: str, end: str, token: str) -> dict:
+def get_external_queries(start: str, end: str, token: str) -> list[dict]:
     org_id = os.getenv("ASTRO_ORGANIZATION_ID")
 
     get_queries_url = f"https://api.astronomer-dev.io/private/v1alpha1/organizations/{org_id}/observability/external-queries?earliestTime={start}&latestTime={end}"
