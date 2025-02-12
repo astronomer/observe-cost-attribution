@@ -25,7 +25,7 @@ The following steps will help you get started:
         - To create one, navigate to Organization > Organization Settings > Access Management > API Tokens. Make sure the organization role is at least Organization Billing Admin.
         - Set this under *Airflow Variables*
 4. Verify your data warehouse connection
-    - Snowflake: Setup a Snowflake connection if you haven't already under Deployment > Environment > Connections. Make sure the connection ID here matches the connection ID name used in the cost DAG (e.g. "snowflake")
+    - Snowflake: Setup a Snowflake connection if you haven't already under Deployment > Environment > Connections. Make sure the connection ID here matches the connection ID name used in the cost DAG (e.g. "snowflake"). If you'd like to change the connection ID name in the cost DAG, make sure to update the `conn_id` field in the `SQLExecuteQueryOperator` used in two places.
 5. Test the DAG
     - Trigger the DAG manually either in Astro Hosted or the Airflow UI to ensure the DAG executes successfully. Monitor the task execution in the Graph View or logs to verify successful execution.  
 
