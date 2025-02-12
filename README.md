@@ -21,7 +21,8 @@ The following steps will help you get started:
 3. Within your Astro Hosted deployment, you'll need to set up a few required environment variables. You can set this up by going clicking on Deployment > Environment tab:
     - `ASTRO_ORGANIZATION_ID`: Your Astronomer organization ID. If you don't know it, go to Organization > Organization Settings and you'll find it on the General page.
         - Set this under *Environment Variables*
-    - `AIRFLOW_VAR_AUTH_TOKEN`: API token for authenticating with Astronomer. This needs to be an Organization-level API key, not at the deployment level.
+    - `AIRFLOW_VAR_AUTH_TOKEN`: API token for authenticating with Astronomer. This needs to be an Organization-level API key, not at the workspace or deployment level.
+        - To create one, navigate to Organization > Organization Settings > Access Management > API Tokens. Make sure the organization role is at least Organization Billing Admin.
         - Set this under *Airflow Variables*
 4. Verify your data warehouse connection
     - Snowflake: Setup a Snowflake connection if you haven't already under Deployment > Environment > Connections. Make sure the connection ID here matches the connection ID name used in the cost DAG (e.g. "snowflake")

@@ -2,8 +2,6 @@ import os
 import requests
 from airflow.decorators import task
 
-
-@task
 def get_external_queries(start: str, end: str, token: str) -> list[dict]:
     org_id = os.getenv("ASTRO_ORGANIZATION_ID")
 
@@ -31,7 +29,6 @@ def get_external_queries(start: str, end: str, token: str) -> list[dict]:
 
     return queries
 
-@task
 def post_metrics(token: str, category: str, type: str, data: list) -> None:
     print(f"::group::Posting {len(data)} {type} items:")
     pprint(data, indent=2)
