@@ -29,7 +29,7 @@ def post_metrics(token: str, category: str, type: str, data: list) -> None:
         },
         headers={
             "Authorization": f"Bearer {token}",
-            "X-Astro-Client-Identifier": "astro-observe-cost-attribution",
+            "X-Astro-Client-Identifier": "astro-observe-sdk",
         },
     )
 
@@ -68,7 +68,7 @@ def get_query_ids(data_interval_start, data_interval_end, var):
         get_queries_url,
         headers={
             "Authorization": f"Bearer {token}",
-            "X-Astro-Client-Identifier": "astro-observe-cost-attribution",
+            "X-Astro-Client-Identifier": "astro-observe-sdk",
         },
     )
 
