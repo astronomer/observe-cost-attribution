@@ -22,7 +22,7 @@ def post_metrics(token: str, category: str, type: str, data: list) -> None:
     org_id = os.getenv("ASTRO_ORGANIZATION_ID")
 
     resp = requests.post(
-        f"https://api.astronomer-dev.io/private/v1alpha1/organizations/{org_id}/observability/metrics",
+        f"https://api.astronomer.io/private/v1alpha1/organizations/{org_id}/observability/metrics",
         json={
             "category": category, 
             "type": f"{type}", 
@@ -61,7 +61,7 @@ def get_query_ids(data_interval_start, data_interval_end, var):
     if not token:
         raise ValueError("Missing required Airflow variable AIRFLOW_VAR_AUTH_TOKEN.")
 
-    get_queries_url = f"https://api.astronomer-dev.io/private/v1alpha1/organizations/{org_id}/observability/external-queries?earliestTime={start}&latestTime={end}"
+    get_queries_url = f"https://api.astronomer.io/private/v1alpha1/organizations/{org_id}/observability/external-queries?earliestTime={start}&latestTime={end}"
 
     print(f"Getting queries from {get_queries_url}")
 
