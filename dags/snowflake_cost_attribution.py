@@ -14,21 +14,18 @@ import datetime
 import requests
 from pprint import pprint
 
+
 # helper function to post metrics to the Astronomer API
 def post_metrics(token: str, category: str, type: str, data: list) -> None:
     print(f"::group::Posting {len(data)} {type} items:")
     pprint(data, indent=2)
     print("::endgroup::")
-    
+
     org_id = os.getenv("ASTRO_ORGANIZATION_ID")
 
     resp = requests.post(
         f"https://api.astronomer.io/private/v1alpha1/organizations/{org_id}/observability/metrics",
-        json={
-            "category": category, 
-            "type": f"{type}", 
-            "metrics": data
-        },
+        json={"category": category, "type": f"{type}", "metrics": data},
         headers={
             "Authorization": f"Bearer {token}",
             "X-Astro-Client-Identifier": "astro-observe-sdk",
@@ -37,6 +34,7 @@ def post_metrics(token: str, category: str, type: str, data: list) -> None:
 
     if resp.status_code != 200:
         raise Exception(f"Failed to post data: {resp.text}")
+
 
 @task
 def check_env_vars():
@@ -58,9 +56,9 @@ def get_query_ids(data_interval_start, data_interval_end, var):
     print(f"Getting queries executed from {start} to {end}")
 
     org_id = os.getenv("ASTRO_ORGANIZATION_ID")
-    token = var["value"].AIRFLOW_VAR_AUTH_TOKEN
+    token = var["value"].AUTH_TOKEN
     if not token:
-        raise ValueError("Missing required Airflow variable AIRFLOW_VAR_AUTH_TOKEN.")
+        raise ValueError("Missing required Airflow variable AUTH_TOKEN.")
 
     get_queries_url = f"https://api.astronomer.io/private/v1alpha1/organizations/{org_id}/observability/external-queries?earliestTime={start}&latestTime={end}"
 
@@ -131,7 +129,7 @@ def post_cost_attribution(query_costs, ti, var):
     pprint(costs, indent=2)
     print("::endgroup::")
 
-    token = var["value"].AIRFLOW_VAR_AUTH_TOKEN
+    token = var["value"].AUTH_TOKEN
     post_metrics(token, "COST", "SNOWFLAKE_CREDITS", costs)
 
 
@@ -184,7 +182,7 @@ def post_query_rows_processed(rows_processed, var, ti):
         elapsed.append(make_row(total_elapsed_time))
         scanned.append(make_row(bytes_scanned))
 
-    token = var["value"].AIRFLOW_VAR_AUTH_TOKEN
+    token = var["value"].AUTH_TOKEN
 
     post_metrics(token, "CUSTOM", "SNOWFLAKE_ROWS_PRODUCED", produced)
     post_metrics(token, "CUSTOM", "SNOWFLAKE_ROWS_INSERTED", inserted)
