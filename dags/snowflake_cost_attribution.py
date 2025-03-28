@@ -1,7 +1,7 @@
 """
 ## Astro Observe Cost Attribution DAG
 
-This DAG grabs external query IDs (each query made to snowflake is assigned a unique query ID) and then queries Snowflake's account_usage.query_attribution_history to get the credits attributed to each query. 
+This DAG grabs external query IDs (each query made to snowflake is assigned a unique query ID) and then queries Snowflake's account_usage.query_attribution_history to get the credits attributed to each query.
 These credit costs are sent to the Astronomer API for cost tracking.
 """
 
@@ -206,13 +206,19 @@ def post_query_rows_processed(rows_processed, var, ti):
 )
 def cost_attribution():
     """
-    Pulls Query IDs from the Astronomer API, then queries Snowflake's account_usage.query_attribution_history
-    to get the credits attributed to each query. Finally, posts the costs to the Astronomer API.
+    Pulls Query IDs from the Astronomer API, then queries Snowflake's account_usage views to retrieve compute
+    credits and data-related metrics related to each query. Finally, posts the costs to the Astronomer API.
     """
     check_env_vars()
     get_queries = get_query_ids()
     check = check_for_query_ids(get_queries["query_ids"])
 
+    end_check_interval = "{{ data_interval_end.subtract(hours=30).strftime('%Y-%m-%dT%H:%M:%S.%fZ') }}"
+    # Query the `snowflake_account_usage.query_attribution_history` view to get the compute credits consumed
+    # by each query found. To help with performance of accessing the Snowflake view, this task filters th
+    # view to only include queries that have ended a day before the end interval that used in the
+    # `get_query_ids` task (i.e. there is a 6-hour lag to retrieve queries and another 24 hours is added for a
+    # total of 30 hours).
     cost_attribution = SQLExecuteQueryOperator(
         task_id="cost_attribution",
         conn_id="snowflake",
@@ -222,11 +228,19 @@ def cost_attribution():
                 end_time,
                 credits_attributed_compute
             from snowflake.account_usage.query_attribution_history
-            where query_id in (%s)
+            where end_time >= %(end_check_interval)s::timestamp_ntz
+                and query_id in (%(query_ids)s)
         """,
-        parameters=[get_queries["query_ids"]],
+        parameters={
+            "end_check_interval": end_check_interval,
+            "query_ids": get_queries["query_ids"],
+        },
     )
 
+    # Query the `snowflake_account_usage.query_history` view to get various data-related metrics for each
+    # query found. To help with performance of accessing the Snowflake view, this task filters the view to
+    # only include queries that have ended a day before the end interval that used in the `get_query_ids` task
+    # (i.e. there is a 6-hour lag to retrieve queries and another 24 hours is added for a total of 30 hours).
     rows_processed_attribution = SQLExecuteQueryOperator(
         task_id="rows_processed_attribution",
         conn_id="snowflake",
@@ -242,9 +256,13 @@ def cost_attribution():
                 bytes_scanned,
                 end_time
             from snowflake.account_usage.query_history
-            where query_id in ( %s )
+            where end_time >= %(end_check_interval)s::timestamp_ntz
+                and query_id in (%(query_ids)s)
         """,
-        parameters=[get_queries["query_ids"]],
+        parameters={
+            "end_check_interval": end_check_interval,
+            "query_ids": get_queries["query_ids"],
+        },
     )
 
     check >> [cost_attribution, rows_processed_attribution]
