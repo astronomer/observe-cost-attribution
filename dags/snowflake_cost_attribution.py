@@ -1,11 +1,10 @@
 """
 ## Astro Observe Cost Attribution DAG
 
-This DAG grabs external query IDs (each query made to snowflake is assigned a unique query ID) and then queries Snowflake's account_usage.query_attribution_history to get the credits attributed to each query. 
+This DAG grabs external query IDs (each query made to snowflake is assigned a unique query ID) and then queries Snowflake's account_usage.query_attribution_history to get the credits attributed to each query.
 These credit costs are sent to the Astronomer API for cost tracking.
 """
 
-from airflow import Dataset
 from airflow.decorators import dag, task
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 
@@ -74,10 +73,10 @@ def get_query_ids(data_interval_start, data_interval_end, var):
 
     try:
         resp.raise_for_status()
-    except requests.exceptions.HTTPError:
+    except requests.exceptions.HTTPError as e:
         raise Exception(
             f"Failed to get queries: {resp.status_code}:{resp.reason} {resp.text}"
-        )
+        ) from e
 
     queries = resp.json().get("externalQueries")
     print(f"Collected {len(queries)} queries.")
