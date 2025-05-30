@@ -47,10 +47,11 @@ def check_env_vars():
 
 @task(multiple_outputs=True)
 def get_query_ids(data_interval_start, data_interval_end, var):
-    # The QUERY_ATTRIBUTION_HISTORY view can have a lag of up to 6 hours. We account for that entire, possible lag time here with a lookback period of 6 hours.
+    # The QUERY_ATTRIBUTION_HISTORY view can have a lag of up to 8 hours.
+    # We account for that entire, possible lag time here with a lookback period of 8 hours.
     # See https://docs.snowflake.com/en/sql-reference/account-usage/query_attribution_history#usage-notes.
-    start = data_interval_start.subtract(hours=6).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-    end = data_interval_end.subtract(hours=6).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    start = data_interval_start.subtract(hours=8).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    end = data_interval_end.subtract(hours=8).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
     print(f"Getting queries executed from {start} to {end}")
 
@@ -59,7 +60,10 @@ def get_query_ids(data_interval_start, data_interval_end, var):
     if not token:
         raise ValueError("Missing required Airflow variable AUTH_TOKEN.")
 
-    get_queries_url = f"https://api.astronomer.io/private/v1alpha1/organizations/{org_id}/observability/external-queries?earliestTime={start}&latestTime={end}"
+    get_queries_url = (
+        f"https://api.astronomer.io/private/v1alpha1/organizations/{org_id}/observability/"
+        f"external-queries?earliestTime={start}&latestTime={end}"
+    )
 
     print(f"Getting queries from {get_queries_url}")
 
