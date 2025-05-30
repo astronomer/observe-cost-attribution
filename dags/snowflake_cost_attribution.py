@@ -1,7 +1,9 @@
 """
 ## Astro Observe Cost Attribution DAG
 
-This DAG grabs external query IDs (each query made to snowflake is assigned a unique query ID) and then queries Snowflake's account_usage.query_attribution_history to get the credits attributed to each query.
+
+This DAG grabs external query IDs (each query made to snowflake is assigned a unique query ID) and then
+queries Snowflake's account_usage.query_attribution_history to get the credits attributed to each query.
 These credit costs are sent to the Astronomer API for cost tracking.
 """
 
@@ -35,7 +37,7 @@ def post_metrics(token: str, category: str, type: str, data: list) -> None:
         raise Exception(f"Failed to post data: {resp.text}")
 
 
-@task
+@task(retries=0)
 def check_env_vars():
     required_vars = [
         "ASTRO_ORGANIZATION_ID",
@@ -47,7 +49,8 @@ def check_env_vars():
 
 @task(multiple_outputs=True)
 def get_query_ids(data_interval_start, data_interval_end, var):
-    # The QUERY_ATTRIBUTION_HISTORY view can have a lag of up to 6 hours. We account for that entire, possible lag time here with a lookback period of 6 hours.
+    # The QUERY_ATTRIBUTION_HISTORY view can have a lag of up to 6 hours. We account for that entire, possible
+    # lag time here with a lookback period of 6 hours.
     # See https://docs.snowflake.com/en/sql-reference/account-usage/query_attribution_history#usage-notes.
     start = data_interval_start.subtract(hours=6).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     end = data_interval_end.subtract(hours=6).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
@@ -59,7 +62,10 @@ def get_query_ids(data_interval_start, data_interval_end, var):
     if not token:
         raise ValueError("Missing required Airflow variable AUTH_TOKEN.")
 
-    get_queries_url = f"https://api.astronomer.io/private/v1alpha1/organizations/{org_id}/observability/external-queries?earliestTime={start}&latestTime={end}"
+    get_queries_url = (
+        f"https://api.astronomer.io/private/v1alpha1/organizations/{org_id}/"
+        f"observability/external-queries?earliestTime={start}&latestTime={end}"
+    )
 
     print(f"Getting queries from {get_queries_url}")
 
@@ -208,9 +214,9 @@ def cost_attribution():
     Pulls Query IDs from the Astronomer API, then queries Snowflake's account_usage.query_attribution_history
     to get the credits attributed to each query. Finally, posts the costs to the Astronomer API.
     """
-    check_env_vars()
+    env_vars = check_env_vars()
     get_queries = get_query_ids()
-    check = check_for_query_ids(get_queries["query_ids"])
+    check_has_queries = check_for_query_ids(get_queries["query_ids"])
 
     cost_attribution = SQLExecuteQueryOperator(
         task_id="cost_attribution",
@@ -246,7 +252,8 @@ def cost_attribution():
         parameters=[get_queries["query_ids"]],
     )
 
-    check >> [cost_attribution, rows_processed_attribution]
+    env_vars >> get_queries
+    check_has_queries >> [cost_attribution, rows_processed_attribution]
     post_cost_attribution(query_costs=cost_attribution.output)
     post_query_rows_processed(rows_processed=rows_processed_attribution.output)
 
